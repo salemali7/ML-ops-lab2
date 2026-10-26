@@ -111,3 +111,4 @@ git push -u origin feat/mlops-hardening
 gh pr create --base main --head feat/mlops-hardening --title "Productionize churn service and CI/CD pipeline" --fill
 gh pr merge --squash --auto
 ```
+Supervisor / Reviewer: talomari@just.edu.jo
