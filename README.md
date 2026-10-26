@@ -1,3 +1,4 @@
+[![CI Pipeline](https://github.com/salemali7/ML-ops-lab2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/salemali7/ML-ops-lab2/actions/workflows/ci.yml)
 # AI381 Customer Churn Prediction Service
 
 
