@@ -1,42 +1,113 @@
-# AI381 Lab 1 · The Manual Pipeline Race (starter kit)
+[![CI Pipeline](https://github.com/salemali7/ML-ops-lab2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/salemali7/ML-ops-lab2/actions/workflows/ci.yml)
+# AI381 Customer Churn Prediction Service
 
-Dr. Tariq Al-Omari · AI381 Machine Learning Operations · JUST · Fall 2026/27
 
-Lab 1 is short, a little chaotic, and on purpose. You will deliver a model by hand, change it, and
-log what that costs you. There is no wrong result: an honest pain log is a great pain log.
+[CI Pipeline](https://www.google.com/search?q=https://github.com/just-ai381/lab1-churn-pipeline/actions/workflows/ci.yml)
 
-## What is in this kit
+Productionized customer churn training pipeline (`src/train/train.py`) and FastAPI inference microservice (`src/app/main.py`) with Pydantic input validation, automated `pytest` verification, multi-stage non-root Docker packaging, and a supply-chain-hardened GitHub Actions CI/CD pipeline.
 
-| File | What it is |
-|---|---|
-| `churn_v1.csv` | Customer churn data, version 1 (1,200 customers) |
-| `churn_v2.csv` | Version 2 of the same data. Something changed. You will find out in Twist 1 |
-| `lab1_baseline.ipynb` | The notebook that trains a logistic regression and saves `model.joblib` |
-| `app/main.py` | A small FastAPI service that loads `model.joblib` and serves `/predict` |
-| `sample_request.json` | One customer to send to the API |
-| `requirements.txt` | The packages the notebook author remembered to write down |
-| `pain_log_template.txt` | Copy it to `pain_log.txt` and fill it in as you go |
+## Start the Service with One Command
 
-## The race (start your stopwatch first)
+Build the multi-stage container (which trains `model.joblib` during the build stage) and start the non-root FastAPI service on port `8000` with a single command:
 
-1. **Round 1.** Run the notebook with `churn_v1.csv`. Start the API by hand:
-   `uvicorn app.main:app --port 8000`
-   Send three predictions with curl, changing the values each time:
-   `curl -X POST localhost:8000/predict -H "Content-Type: application/json" -d @sample_request.json`
-2. **Twist 1.** Change the notebook to `churn_v2.csv`, retrain and redeploy. Find and fix what breaks.
-3. **Twist 2.** Create a brand-new virtual environment (or a Codespace) and rebuild everything using only your own notes.
-4. **Twist 3.** Answer: "Which model version is your API serving right now?" and explain why it is hard to prove.
-5. Finish `pain_log.txt`: minutes per step, every failure, every unanswered question.
+```bash
+docker build -t churn-api . && docker run --rm -p 8000:8000 churn-api
+```
 
-## Setup
+Or in a local Python environment:
 
-- Python 3.11 or newer and a terminal. On Windows, use WSL2 with Ubuntu.
-- `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
+```bash
+pip install -r requirements.txt && python -m src.train.train --data churn_v2.csv --model-out model.joblib && uvicorn src.app.main:app --host 0.0.0.0 --port 8000
+```
 
-## Turning it in
+## API Endpoints & Example Requests
 
-Record one 5–8 minute video with your face and voice, say each checkpoint aloud, and turn it in on the
-**Lab 1** assignment in the **AI381 MLOPs** team on Microsoft Teams (Lab Submissions channel, Assignments tab).
-The full instructions, checkpoints and rubric are on e-learning and on the Teams assignment.
+### 1. Health & Model Provenance (`GET /health`)
 
-Questions: Thursday online office hours on Teams, the Lab Submissions channel, or talomari@just.edu.jo.
+```bash
+curl http://localhost:8000/health
+```
+
+```json
+{
+  "status": "ok",
+  "model_version": "churn_v2-caa1408b",
+  "dataset": "churn_v2.csv",
+  "metrics": {
+    "f1": 0.587,
+    "roc_auc": 0.792
+  }
+}
+```
+
+### 2. Churn Prediction (`POST /predict`)
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d @sample_request.json
+```
+
+```json
+{
+  "churn_probability": 0.895,
+  "churn_prediction": 1,
+  "model_version": "churn_v2-caa1408b"
+}
+```
+
+## Repository Structure
+
+| Path | Description |
+| :--- | :--- |
+| `src/train/train.py` | CLI training script that validates input columns, normalizes `monthly_fee`/`monthly_charges`, fits the pipeline, and embeds SHA-256 dataset/model provenance metadata. |
+| `src/app/main.py` | FastAPI service exposing `/health` and `/predict` with strict Pydantic input validation (`CustomerRequest`). |
+| `tests/test_api.py` | `pytest` suite covering API contract, model loading, input schema validation (`422`), boundary edge cases, and deterministic predictions. |
+| `Dockerfile` | Multi-stage, non-root (`UID 10001`) Dockerfile pinned to `python:3.11.9-slim-bookworm@sha256:35cec96...` with a built-in `HEALTHCHECK`. |
+| `.github/workflows/ci.yml` | GitHub Actions workflow with all third-party actions pinned to full 40-character commit SHAs: runs `ruff` + `pytest` on every PR, and builds, scans with Trivy, and pushes to GHCR (`ghcr.io/<owner>/<repo>/churn-api:<commit-sha>`) on `main`. |
+
+## Running Linter & Tests Locally
+
+```bash
+pip install -r requirements.txt ruff pytest httpx
+ruff check src/ tests/
+pytest -v
+```
+
+## Branch Protection & Pull Request Workflow
+
+### 1. Protect `main` with Required Checks
+
+Via the GitHub CLI (`gh`), run the following command (replacing `<OWNER>/<REPO>` with your repository slug) to enforce Pull Requests and require the `Lint and Test` status check to pass before merging into `main`:
+
+```bash
+gh api \
+  --method PUT \
+  -H "Accept: application/vnd.github+json" \
+  /repos/<OWNER>/<REPO>/branches/main/protection \
+  -f "required_status_checks[strict]=true" \
+  -f "required_status_checks[contexts][]=Lint and Test" \
+  -F "enforce_admins=true" \
+  -f "required_pull_request_reviews[dismiss_stale_reviews]=true" \
+  -F "required_pull_request_reviews[required_approving_review_count]=0" \
+  -F "restrictions=null"
+```
+
+Or in the GitHub Web UI:
+1. Navigate to **Settings → Branches → Add branch ruleset / Add branch protection rule**.
+2. Set **Branch name pattern** to `main`.
+3. Enable **Require a pull request before merging**.
+4. Enable **Require status checks to pass before merging**, check **Require branches to be up to date before merging**, and add **`Lint and Test`** as a required check.
+
+### 2. Merge Work Through a Pull Request
+
+```bash
+git checkout -b feat/mlops-hardening
+git add src/ tests/ Dockerfile .github/workflows/ci.yml README.md
+git commit -m "feat: refactor training/API, add pytest suite, non-root Dockerfile, and SHA-pinned CI"
+git push -u origin feat/mlops-hardening
+
+# Open PR and auto-merge once the required Lint and Test check turns green
+gh pr create --base main --head feat/mlops-hardening --title "Productionize churn service and CI/CD pipeline" --fill
+gh pr merge --squash --auto
+```
