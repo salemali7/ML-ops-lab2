@@ -1,0 +1,18 @@
+AI381 Lab 1 · Pain log
+Name:                Student ID:            Date:
+
+Start the stopwatch before you open the notebook. One line per step.
+
+Step               | Minutes | What failed or slowed me down        | Question I could not answer
+-------------------|---------|---------------------------------------|----------------------------
+Round 1 (train)    |         |                                       |
+Round 1 (serve)    |         |                                       |
+Round 1 (3 x curl) |         |                                       |
+Twist 1 (v2 data)  |         |                                       |
+Twist 2 (fresh env)|         |                                       |
+Twist 3 (version?) |         |                                       |
+-------------------|---------|---------------------------------------|----------------------------
+Total              |         | Number of failures:                   |
+
+The one thing I would automate first, and why:
+

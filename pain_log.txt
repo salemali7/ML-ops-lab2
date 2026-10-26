@@ -1,0 +1,36 @@
+AI381 Lab 1 · Pain log
+
+Name:Salem Ali Al-Nawi           Student ID:184157          Date: 2026-10-21
+
+
+
+Start the stopwatch before you open the notebook. One line per step.
+
+
+
+Step               | Minutes | What failed or slowed me down         | Question I could not answer
+
+-------------------|---------|---------------------------------------|----------------------------
+
+Round 1 (train)    | 3      | Manual cell runs; silent model.joblib | Are F1=0.512/AUC=0.783 saved anywhere?
+
+Round 1 (serve)    | 2       | Needs app/ dir & model.joblib in CWD  | Does API auto-reload a new model.joblib?
+
+Round 1 (3 x curl) | 2       | Hand-editing JSON; no Pydantic schema | What feature values/ranges are valid?
+
+Twist 1 (v2 data)  | 4       | KeyError monthly_charges in 3 files   | Where else is monthly_charges hardcoded?
+
+Twist 2 (fresh env)| 4       | FileNotFoundError; unpinned reqs.txt  | Will unpinned pip install match later?
+
+Twist 3 (version?) | 2       | No version in /health; RAM vs disk    | How to prove live RAM model is v1 or v2?
+
+-------------------|---------|---------------------------------------|----------------------------
+
+Total              | 17      | Number of failures: 8                 |
+
+
+
+The one thing I would automate first, and why:
+
+I would automate a single training + validation script (train.py + CI smoke test) that shares one Pydantic feature schema between training and FastAPI, pins exact dependency versions in requirements.txt, and embeds model_version + dataset SHA-256 metadata inside model.joblib (exposed on /health and /predict). Every failure across Twists 1-3 came from hardcoded feature names drifting across three files (notebook, app/main.py, sample_request.json), unpinned environment setup, and overwriting model.joblib in-place without version metadata or automatic server reload.
+

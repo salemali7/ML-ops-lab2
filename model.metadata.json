@@ -1,0 +1,19 @@
+{
+  "model_version": "churn_v2-caa1408b",
+  "dataset": "churn_v2.csv",
+  "dataset_rows": 1500,
+  "dataset_sha256": "caa1408b0bcdc90169dc3e529945edb86064d3b8d54f5b2149ba678e2a42d49b",
+  "features": [
+    "tenure_months",
+    "monthly_charges",
+    "support_calls",
+    "contract",
+    "internet_service"
+  ],
+  "metrics": {
+    "f1": 0.587,
+    "roc_auc": 0.792
+  },
+  "trained_at_utc": "2026-10-26T18:53:39.241009+00:00",
+  "model_sha256": "3f4660d9c6d286b284499c0e9eb5707ccda12c3888f7a589328c5e02c23b6018"
+}
